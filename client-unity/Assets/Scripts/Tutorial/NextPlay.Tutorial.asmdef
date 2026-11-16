@@ -1,0 +1,8 @@
+{
+  "name": "NextPlay.Tutorial",
+  "rootNamespace": "NextPlay.Tutorial",
+  "references": ["Unity.Newtonsoft.Json"],
+  "includePlatforms": [], "excludePlatforms": [],
+  "allowUnsafeCode": false, "overrideReferences": false, "precompiledReferences": [],
+  "autoReferenced": true, "defineConstraints": [], "versionDefines": [], "noEngineReferences": false
+}

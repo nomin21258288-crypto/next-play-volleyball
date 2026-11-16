@@ -1,0 +1,8 @@
+{
+  "name": "NextPlay.Gameplay",
+  "rootNamespace": "NextPlay.Gameplay",
+  "references": ["NextPlay.Sim", "NextPlay.Controls", "NextPlay.Tutorial"],
+  "includePlatforms": [], "excludePlatforms": [],
+  "allowUnsafeCode": false, "overrideReferences": false, "precompiledReferences": [],
+  "autoReferenced": true, "defineConstraints": [], "versionDefines": [], "noEngineReferences": false
+}

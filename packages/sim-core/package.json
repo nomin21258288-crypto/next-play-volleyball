@@ -1,0 +1,1 @@
+{"name": "@nextplay/sim-core", "version": "0.1.0", "type": "module", "scripts": {"test": "node --test test/sim.test.js test/game.test.js test/scoring.test.js"}}

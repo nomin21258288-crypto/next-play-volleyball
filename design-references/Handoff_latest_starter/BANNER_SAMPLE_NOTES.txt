@@ -1,0 +1,3 @@
+The PNG is a concept mockup for layout, logo direction, colors and loading-screen hierarchy.
+It is not final game art. Rebuild with the exact supplied photo references and manually verify each face.
+App icon and store listing artwork are separate deliverables and should be exported in their required sizes.

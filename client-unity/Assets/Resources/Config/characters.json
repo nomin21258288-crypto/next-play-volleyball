@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "note": "Exactly six characters. Order/numbering follows design-references/Handoff_latest_starter/CLAUDE_HANDOFF.md. roleLabel values are PROPOSED starting labels (Smasher, All-Rounder, Defender, Blocker, Setter, Server) and the person-to-role mapping is NOT approved yet. No jersey numbers: none were supplied.",
+  "roleMappingApproved": false,
+  "jerseyNumbersApproved": false,
+  "characters": [
+    {
+      "id": "c1",
+      "order": 1,
+      "sourceKey": "01",
+      "roleLabel": "Smasher",
+      "source": "01_main_front_reference.png",
+      "cropBox": [
+        270,
+        160,
+        610,
+        613
+      ],
+      "faceTexture": "face_01_main",
+      "hairColor": "#332824",
+      "skinColor": "#945C43"
+    },
+    {
+      "id": "c2",
+      "order": 2,
+      "sourceKey": "02",
+      "roleLabel": "All-Rounder",
+      "source": "02_second_position_reference.png",
+      "cropBox": [
+        239,
+        265,
+        531,
+        655
+      ],
+      "faceTexture": "face_02_second",
+      "hairColor": "#362925",
+      "skinColor": "#A87159"
+    },
+    {
+      "id": "c3",
+      "order": 3,
+      "sourceKey": "04A",
+      "roleLabel": "Defender",
+      "source": "04A_two_person_photo_left_player_crop.jpg",
+      "cropBox": [
+        276,
+        70,
+        524,
+        400
+      ],
+      "faceTexture": "face_04A_left",
+      "hairColor": "#3B1A18",
+      "skinColor": "#9D685E"
+    },
+    {
+      "id": "c4",
+      "order": 4,
+      "sourceKey": "04B",
+      "roleLabel": "Blocker",
+      "source": "04B_two_person_photo_right_player_crop.jpg",
+      "cropBox": [
+        211,
+        70,
+        459,
+        400
+      ],
+      "faceTexture": "face_04B_right",
+      "hairColor": "#4F2425",
+      "skinColor": "#D58675"
+    },
+    {
+      "id": "c5",
+      "order": 5,
+      "sourceKey": "05",
+      "roleLabel": "Setter",
+      "source": "05_cream_kurta_reference.png",
+      "cropBox": [
+        345,
+        60,
+        735,
+        580
+      ],
+      "faceTexture": "face_05_cream",
+      "hairColor": "#343739",
+      "skinColor": "#856A62"
+    },
+    {
+      "id": "c6",
+      "order": 6,
+      "sourceKey": "06",
+      "roleLabel": "Server",
+      "source": "06_circular_portrait_reference.png",
+      "cropBox": [
+        402,
+        190,
+        1077,
+        1090
+      ],
+      "faceTexture": "face_06_circular",
+      "hairColor": "#7E6558",
+      "skinColor": "#AB7647"
+    }
+  ]
+}

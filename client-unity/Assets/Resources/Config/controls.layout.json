@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "orientation": "landscape",
+  "units": "dp",
+  "referenceScreens": [[640,360],[732,412],[800,360],[915,412]],
+  "controls": [
+    {"id":"joystick","type":"joystick","anchor":"bottom-left","offset":[24,24],"size":[140,140],"action":"move","labelKey":"ctl.joystick"},
+    {"id":"btn_jump","type":"button","anchor":"bottom-right","offset":[20,20],"size":[72,72],"action":"jump","labelKey":"ctl.jump"},
+    {"id":"btn_pass","type":"button","anchor":"bottom-right","offset":[104,20],"size":[64,64],"action":"pass","labelKey":"ctl.pass"},
+    {"id":"btn_serve","type":"button","anchor":"bottom-right","offset":[180,20],"size":[64,64],"action":"serve","labelKey":"ctl.serve"},
+    {"id":"btn_set","type":"button","anchor":"bottom-right","offset":[20,104],"size":[64,64],"action":"set","labelKey":"ctl.set"},
+    {"id":"btn_spike","type":"button","anchor":"bottom-right","offset":[96,104],"size":[64,64],"action":"spike","labelKey":"ctl.spike"},
+    {"id":"btn_block","type":"button","anchor":"bottom-right","offset":[172,104],"size":[64,64],"action":"block","labelKey":"ctl.block"},
+    {"id":"btn_pause","type":"button","anchor":"top-right","offset":[16,16],"size":[44,44],"action":"pause","labelKey":"ctl.pause"}
+  ]
+}

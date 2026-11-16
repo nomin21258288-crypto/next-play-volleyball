@@ -1,0 +1,11 @@
+CHARACTER REFERENCE INDEX
+
+01 — Main front character (first position)
+02 — Second character (second position)
+03 — Original two-person photo (source)
+04A — Left person cropped separately
+04B — Right person cropped separately
+05 — Cream-kurta character
+06 — Circular-portrait character
+
+Use the matching numbered file. Keep every face faithful to its own reference.

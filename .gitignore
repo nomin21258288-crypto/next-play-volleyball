@@ -1,0 +1,3 @@
+node_modules/
+client-unity/Library/ client-unity/Temp/ client-unity/Logs/ client-unity/obj/ client-unity/Builds/
+*.apk *.aab *.keystore

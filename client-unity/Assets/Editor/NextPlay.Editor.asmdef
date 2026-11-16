@@ -1,0 +1,8 @@
+{
+  "name": "NextPlay.Editor",
+  "rootNamespace": "NextPlay.EditorTools",
+  "references": ["NextPlay.Gameplay", "NextPlay.Sim", "NextPlay.Core", "NextPlay.App", "Unity.Newtonsoft.Json"],
+  "includePlatforms": ["Editor"], "excludePlatforms": [],
+  "allowUnsafeCode": false, "overrideReferences": false, "precompiledReferences": [],
+  "autoReferenced": false, "defineConstraints": [], "versionDefines": [], "noEngineReferences": false
+}

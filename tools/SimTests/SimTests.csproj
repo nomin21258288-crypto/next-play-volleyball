@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Runs the C# sim tests WITHOUT Unity:  cd tools/SimTests && dotnet test   (needs .NET 8 SDK + NuGet access) -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>NextPlay.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../client-unity/Assets/Scripts/Sim/*.cs" />
+    <Compile Include="../../client-unity/Assets/Scripts/Core/*.cs" /> <!-- Stage 3: branding / roster / loading flow (pure C#) -->
+    <Compile Include="../../client-unity/Assets/Tests/EditMode/*.cs" /> <!-- non-recursive: skips Unity/ folder (needs UnityEngine) -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>

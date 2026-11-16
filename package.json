@@ -1,0 +1,9 @@
+{
+  "name": "nextplay",
+  "private": true,
+  "scripts": {
+    "test": "cd packages/sim-core && npm test && cd ../tutorial-core && npm test && cd ../.. && node tools/check_golden.mjs && node tools/check_config.mjs",
+    "golden": "node tools/gen_golden.mjs",
+    "check:config": "node tools/check_config.mjs"
+  }
+}

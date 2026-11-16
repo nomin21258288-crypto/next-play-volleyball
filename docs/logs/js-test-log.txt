@@ -1,0 +1,185 @@
+
+> test
+> cd packages/sim-core && npm test && cd ../tutorial-core && npm test && cd ../.. && node tools/check_golden.mjs && node tools/check_config.mjs
+
+
+> @nextplay/sim-core@0.1.0 test
+> node --test test/sim.test.js test/game.test.js
+
+TAP version 13
+# Subtest: all-bot match completes: every action type occurs, sets/match end by rules
+ok 1 - all-bot match completes: every action type occurs, sets/match end by rules
+  ---
+  duration_ms: 356.382655
+  type: 'test'
+  ...
+# Subtest: deterministic: same seed -> identical match
+ok 2 - deterministic: same seed -> identical match
+  ---
+  duration_ms: 330.691013
+  type: 'test'
+  ...
+# Subtest: ball and players never produce NaN / leave sane bounds
+ok 3 - ball and players never produce NaN / leave sane bounds
+  ---
+  duration_ms: 33.468553
+  type: 'test'
+  ...
+# Subtest: human input: serve works only for the server; out-of-reach pass fails and is reported
+ok 4 - human input: serve works only for the server; out-of-reach pass fails and is reported
+  ---
+  duration_ms: 3.588131
+  type: 'test'
+  ...
+# Subtest: cooldown: a human cannot act twice within cooldown
+ok 5 - cooldown: a human cannot act twice within cooldown
+  ---
+  duration_ms: 1.202993
+  type: 'test'
+  ...
+# Subtest: human jump is physical (apex ~ v^2/2g) and block requires being airborne
+ok 6 - human jump is physical (apex ~ v^2/2g) and block requires being airborne
+  ---
+  duration_ms: 0.622521
+  type: 'test'
+  ...
+# Subtest: block does not count as a touch and does not double-count the point
+ok 7 - block does not count as a touch and does not double-count the point
+  ---
+  duration_ms: 248.764441
+  type: 'test'
+  ...
+# Subtest: ball falls under gravity and lands (~sqrt(2h/g))
+ok 8 - ball falls under gravity and lands (~sqrt(2h/g))
+  ---
+  duration_ms: 0.957168
+  type: 'test'
+  ...
+# Subtest: deterministic: same inputs give identical landing
+ok 9 - deterministic: same inputs give identical landing
+  ---
+  duration_ms: 0.875022
+  type: 'test'
+  ...
+# Subtest: low ball hits net and does not cross
+ok 10 - low ball hits net and does not cross
+  ---
+  duration_ms: 0.146306
+  type: 'test'
+  ...
+# Subtest: high ball clears net and lands on far side
+ok 11 - high ball clears net and lands on far side
+  ---
+  duration_ms: 0.173646
+  type: 'test'
+  ...
+# Subtest: full point: serve crosses, lands in court -> server scores and serves
+ok 12 - full point: serve crosses, lands in court -> server scores and serves
+  ---
+  duration_ms: 1.149035
+  type: 'test'
+  ...
+# Subtest: out ball faults last toucher
+ok 13 - out ball faults last toucher
+  ---
+  duration_ms: 0.130233
+  type: 'test'
+  ...
+# Subtest: four touches and double touch are faults
+ok 14 - four touches and double touch are faults
+  ---
+  duration_ms: 0.200401
+  type: 'test'
+  ...
+# Subtest: set ends at 25 win-by-2; match at 2 sets
+ok 15 - set ends at 25 win-by-2; match at 2 sets
+  ---
+  duration_ms: 0.29042
+  type: 'test'
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1101.790978
+
+> @nextplay/tutorial-core@0.1.0 test
+> node --test test/tutorial.test.js
+
+TAP version 13
+# Subtest: layout valid on all reference screens (in bounds, no overlap, >=44dp, one control per game action)
+ok 1 - layout valid on all reference screens (in bounds, no overlap, >=44dp, one control per game action)
+  ---
+  duration_ms: 1.807093
+  type: 'test'
+  ...
+# Subtest: every real game action has exactly one on-screen control
+ok 2 - every real game action has exactly one on-screen control
+  ---
+  duration_ms: 0.175099
+  type: 'test'
+  ...
+# Subtest: every tutorial highlight/arrow targets a control that exists, and matches the action it teaches
+ok 3 - every tutorial highlight/arrow targets a control that exists, and matches the action it teaches
+  ---
+  duration_ms: 1.165179
+  type: 'test'
+  ...
+# Subtest: arrow target rectangles are derived from the layout at runtime (change layout -> arrow moves)
+ok 4 - arrow target rectangles are derived from the layout at runtime (change layout -> arrow moves)
+  ---
+  duration_ms: 0.209427
+  type: 'test'
+  ...
+# Subtest: Urdu and English complete; RTL flagged; unknown language falls back to English; new language is just a file
+ok 5 - Urdu and English complete; RTL flagged; unknown language falls back to English; new language is just a file
+  ---
+  duration_ms: 0.393238
+  type: 'test'
+  ...
+# Subtest: first login: new account auto-launches; completed/skipped never re-forced; legacy accounts never forced
+ok 6 - first login: new account auto-launches; completed/skipped never re-forced; legacy accounts never forced
+  ---
+  duration_ms: 0.285602
+  type: 'test'
+  ...
+# Subtest: session: next/prev/skip/practice-again/replay; progress resumes and survives logout/login (file persistence)
+ok 7 - session: next/prev/skip/practice-again/replay; progress resumes and survives logout/login (file persistence)
+  ---
+  duration_ms: 3.249704
+  type: 'test'
+  ...
+# Subtest: maps: any registered map gets a guide; shown once per map; suppressed for experienced players / hints off
+ok 8 - maps: any registered map gets a guide; shown once per map; suppressed for experienced players / hints off
+  ---
+  duration_ms: 0.706817
+  type: 'test'
+  ...
+# Subtest: practice match: all 7 steps complete from REAL game events (autopilot stands in for the human)
+ok 9 - practice match: all 7 steps complete from REAL game events (autopilot stands in for the human)
+  ---
+  duration_ms: 64.277273
+  type: 'test'
+  ...
+# Subtest: practice: tapping buttons alone does not complete steps (needs a successful game action)
+ok 10 - practice: tapping buttons alone does not complete steps (needs a successful game action)
+  ---
+  duration_ms: 1.447304
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 139.804618
+golden fixtures: up to date
+config check OK: 3 name options, 3 taglines, 2 icon options, 6 characters
+exit=0

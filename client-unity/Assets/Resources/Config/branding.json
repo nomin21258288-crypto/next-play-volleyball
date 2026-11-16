@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "approvalStatus": "PENDING USER APPROVAL. Every option below is preserved from the supplied files. 'selected' is only a provisional default so the app can run; change it here, or in the in-app Branding screen (saved as an override on the phone), without touching any code.",
+  "selected": {
+    "name": "nexora_play_volleyball_game",
+    "logo": "text_lockup",
+    "tagline": "rise_set_smash",
+    "appIcon": "mark"
+  },
+  "nameOptions": [
+    {
+      "id": "nexora_play_volleyball_game",
+      "display": "NEXORA PLAY VOLLEYBALL GAME",
+      "launcherLabel": "Nexora Play Volleyball",
+      "lockupLines": ["NEXORA PLAY", "VOLLEYBALL", "PLAY ELEVEN"],
+      "source": "design-references/Handoff_latest_starter/CLAUDE_HANDOFF.md section 1 ('Confirmed game name'); same lockup as NEXORA_PLAY_Volleyball_Loading_Banner_Sample.png",
+      "status": "stated as confirmed in the newest handoff; conflicts with the Developer Master, so still shown for approval"
+    },
+    {
+      "id": "next_play_volleyball_game",
+      "display": "NEXT PLAY VOLLEYBALL GAME",
+      "launcherLabel": "Next Play Volleyball",
+      "lockupLines": ["NEXT PLAY", "VOLLEYBALL", "PLAY ELEVEN"],
+      "source": "design-references/Developer_Starter/NEXT_PLAY_DEVELOPER_MASTER.md ('Confirmed project name'); also the project folder name 'nextplay'",
+      "status": "conflicts with the newer handoff; needs a decision"
+    },
+    {
+      "id": "nexora_play_platform",
+      "display": "NEXORA PLAY",
+      "launcherLabel": "Nexora Play",
+      "lockupLines": ["NEXORA PLAY", "PLAY ELEVEN"],
+      "source": "design-references/Handoff_first_package/CLAUDE_HANDOFF.md (platform/website brand, game title left open)",
+      "status": "platform brand only"
+    }
+  ],
+  "logoOptions": [
+    {
+      "id": "text_lockup",
+      "type": "text_lockup",
+      "available": true,
+      "source": "Generated in-engine from the selected name's lockupLines (no artwork invented).",
+      "status": "placeholder lockup; final vector logo still needs production and approval"
+    },
+    {
+      "id": "final_vector_logo",
+      "type": "image",
+      "available": false,
+      "resource": "",
+      "source": "NOT SUPPLIED. The sample banner is a concept mockup, not production art.",
+      "status": "slot reserved: drop a PNG into Assets/Resources/Branding/, set 'resource' and 'available': true"
+    }
+  ],
+  "taglineOptions": [
+    {"id": "rise_set_smash", "text": "RISE. SET. SMASH.", "source": "Handoff section 4A example", "status": "pending approval"},
+    {"id": "the_volleyball_arena", "text": "THE VOLLEYBALL ARENA.", "source": "Handoff section 4A example", "status": "pending approval"},
+    {"id": "ultimate_experience", "text": "THE ULTIMATE VOLLEYBALL EXPERIENCE", "source": "text on the sample banner image", "status": "pending approval"}
+  ],
+  "appIconOptions": [
+    {"id": "mark", "file": "Assets/Branding/Icons/icon_option_mark.png", "available": true, "source": "Generated volleyball + net mark (handoff 4: ball/net mark, no tiny text)", "status": "option for approval"},
+    {"id": "three_faces", "file": "Assets/Branding/Icons/icon_option_three_faces.png", "available": true, "source": "Three different people from their own photos (Developer Master: 'exactly 3 distinct faces')", "status": "option for approval"}
+  ],
+  "android": {
+    "packageId": "com.nexoraplay.volleyball",
+    "packageIdApproved": false,
+    "note": "A package id cannot change once an app is published. Confirm before any store release."
+  },
+  "loadingScreen": {
+    "minHoldSeconds": 0.8,
+    "layout": "auto",
+    "showCloseButton": true,
+    "note": "minHoldSeconds is only a short hold AFTER real loading finishes. Progress is never faked: the bar cannot pass the real loaded fraction."
+  },
+  "colors": {
+    "navy": "#0A1850",
+    "blue": "#1F5BE0",
+    "gold": "#FFC81E",
+    "white": "#FFFFFF"
+  }
+}
