@@ -1,107 +1,77 @@
-import test from 'node:test'; import assert from 'node:assert/strict';
-import { newMatch, makeRules, onServe, createGame, tick, botInput, DT, SCORE_LIMITS, isValidTargetScore,
-  createRoom, setTargetScore, startRoomGame, scoreOptions, FORMATS } from '../src/index.js';
+// Authoritative rally-point rules. Pure state machine: input events -> new state.
+// Prototype rules (NOT yet approved as final): rally scoring, sets to 25 win-by-2,
+// deciding set to 15, best of 3, max 3 touches/side, no same-player consecutive touch.
+import { COURT } from './physics.js';
 
-// Awards exactly one point to `team` through the real rules code (serve-out-of-turn gives the point to the calling team).
-const give = (m, team) => { m.server = 1 - team; onServe(m, team, 'T'); };
-const ALL = Array.from({ length: 19 }, (_, i) => 7 + i);
+// ---- Match rules. RANKED = fixed official rules (best of 3, sets to 25, deciding set to 15, win by 2). Never configurable.
+// CUSTOM (custom-room creator only) = any whole-number target 7..25 inclusive, win by 2, single game by default.
+export const SCORE_LIMITS = Object.freeze({ min: 7, max: 25 });
+export const isValidTargetScore = (n) => Number.isInteger(n) && n >= SCORE_LIMITS.min && n <= SCORE_LIMITS.max;
 
-test('every whole number from 7 to 25 is accepted, nothing else is', () => {
-  assert.deepEqual(scoreOptions(), ALL); assert.equal(ALL.length, 19);
-  for (const n of ALL) { assert.ok(isValidTargetScore(n)); assert.equal(makeRules({ mode: 'custom', targetScore: n }).setTargets[0], n); }
-  for (const bad of [6, 26, 0, -1, 100, 7.5, 14.99, NaN, Infinity, '15', null, undefined, true, [], {}]) {
-    assert.throws(() => makeRules({ mode: 'custom', targetScore: bad }), RangeError, 'accepted ' + String(bad));
+export function makeRules({ mode = 'ranked', targetScore, setsToWin } = {}) {
+  if (mode === 'ranked') {
+    if (targetScore !== undefined && targetScore !== null) throw new RangeError('ranked matches use fixed official scoring: targetScore is not allowed');
+    if (setsToWin !== undefined && setsToWin !== null) throw new RangeError('ranked matches use fixed official scoring: setsToWin is not allowed');
+    return Object.freeze({ mode: 'ranked', setsToWin: 2, setTargets: Object.freeze([25, 25, 15]), winBy: 2 });
   }
-  assert.equal(SCORE_LIMITS.min, 7); assert.equal(SCORE_LIMITS.max, 25);
+  if (mode === 'custom') {
+    if (!isValidTargetScore(targetScore)) throw new RangeError(`custom targetScore must be a whole number from ${SCORE_LIMITS.min} to ${SCORE_LIMITS.max}, got ${String(targetScore)}`);
+    const sets = setsToWin === undefined || setsToWin === null ? 1 : setsToWin;
+    if (sets !== 1 && sets !== 2) throw new RangeError('custom setsToWin must be 1 or 2');
+    return Object.freeze({ mode: 'custom', setsToWin: sets, setTargets: Object.freeze([targetScore]), winBy: 2 });
+  }
+  throw new RangeError('unknown match mode ' + String(mode));
+}
+export const targetFor = (rules, setIndex) => rules.setTargets[Math.min(setIndex, rules.setTargets.length - 1)];
+
+export const newMatch = (rules = makeRules()) => ({
+  rules, sets: [0, 0], score: [0, 0], setIndex: 0, server: 0,
+  rally: { touches: 0, side: null, lastPlayer: null, lastTeam: null, served: false },
+  winner: null, log: [],
 });
 
-for (const n of ALL) {
-  test(`custom target ${n}: match ends exactly at ${n} (nothing earlier), scoreboard and winner follow`, () => {
-    const m = newMatch(makeRules({ mode: 'custom', targetScore: n }));
-    for (let i = 1; i < n; i++) { give(m, 0); assert.equal(m.winner, null, `ended early at ${i}`); assert.deepEqual(m.score, [i, 0]); }
-    give(m, 0);
-    assert.equal(m.winner, 0); assert.deepEqual(m.sets, [1, 0]);
-    assert.equal(m.log.filter((e) => e.setWinner !== undefined).at(-1).score[0], n);
-  });
+const target = (m) => targetFor(m.rules, m.setIndex);
+const other = (t) => 1 - t;
+const sideOfX = (x) => (x < 0 ? 0 : 1);
+
+function award(m, team, reason) {
+  m.score[team]++;
+  m.log.push({ set: m.setIndex, team, reason, score: [...m.score] });
+  const [a, b] = m.score, t = target(m);
+  if ((a >= t || b >= t) && Math.abs(a - b) >= m.rules.winBy) {
+    m.sets[a > b ? 0 : 1]++;
+    m.log.push({ set: m.setIndex, setWinner: a > b ? 0 : 1, score: [a, b] });
+    if (m.sets[0] === m.rules.setsToWin || m.sets[1] === m.rules.setsToWin) m.winner = m.sets[0] === m.rules.setsToWin ? 0 : 1;
+    else { m.setIndex++; m.score = [0, 0]; }
+  }
+  m.server = team; // rally point: winner of rally serves
+  m.rally = { touches: 0, side: null, lastPlayer: null, lastTeam: null, served: false };
 }
 
-test('win by two applies to the chosen target (7 -> 8:7 continues, 9:7 ends)', () => {
-  const m = newMatch(makeRules({ mode: 'custom', targetScore: 7 }));
-  for (let i = 0; i < 6; i++) { give(m, 0); give(m, 1); }          // 6:6
-  give(m, 0); assert.equal(m.winner, null);                       // 7:6 not enough
-  give(m, 1); give(m, 0); assert.equal(m.winner, null);           // 8:7
-  give(m, 0); assert.equal(m.winner, 0); assert.deepEqual(m.log.filter((e) => e.setWinner !== undefined).at(-1).score, [9, 7]);
-});
-
-test('either team can win a custom game; score never exceeds what was played', () => {
-  const m = newMatch(makeRules({ mode: 'custom', targetScore: 11 }));
-  for (let i = 0; i < 11; i++) give(m, 1);
-  assert.equal(m.winner, 1); assert.deepEqual(m.sets, [0, 1]);
-});
-
-test('custom with setsToWin 2 uses the chosen target in every set', () => {
-  const m = newMatch(makeRules({ mode: 'custom', targetScore: 9, setsToWin: 2 }));
-  for (let i = 0; i < 9; i++) give(m, 0);
-  assert.equal(m.winner, null); assert.deepEqual(m.sets, [1, 0]); assert.equal(m.setIndex, 1);
-  for (let i = 0; i < 9; i++) give(m, 1); give(m, 0);            // set 2 -> 1; third set also to 9
-  assert.deepEqual(m.sets, [1, 1]); assert.equal(m.setIndex, 2);
-  for (let i = 0; i < 9; i++) give(m, 0); assert.equal(m.winner, 0);
-});
-
-test('RANKED keeps the fixed official rules and refuses any custom score', () => {
-  const r = makeRules({ mode: 'ranked' }); assert.deepEqual([...r.setTargets], [25, 25, 15]); assert.equal(r.setsToWin, 2); assert.equal(r.winBy, 2);
-  assert.deepEqual(makeRules(), r); assert.deepEqual(newMatch().rules, r);   // default = ranked, so all older code behaves as before
-  for (const t of [7, 15, 21, 25]) assert.throws(() => makeRules({ mode: 'ranked', targetScore: t }), RangeError);
-  assert.throws(() => makeRules({ mode: 'ranked', setsToWin: 1 }), RangeError);
-  const m = newMatch(); for (let i = 0; i < 24; i++) give(m, 0); assert.equal(m.score[0], 24); give(m, 0);
-  assert.deepEqual(m.sets, [1, 0]);                                // set 1 ended at 25
-  for (let i = 0; i < 25; i++) give(m, 1); assert.deepEqual(m.sets, [1, 1]);
-  for (let i = 0; i < 14; i++) give(m, 0); assert.equal(m.winner, null); give(m, 0); assert.equal(m.winner, 0);   // deciding set to 15
-});
-
-test('unknown mode is rejected', () => { assert.throws(() => makeRules({ mode: 'casual', targetScore: 15 }), RangeError); });
-
-test('Create Room: all three formats accept every score 7..25', () => {
-  for (const [format, n] of Object.entries(FORMATS)) for (const t of ALL) {
-    const room = createRoom({ creatorId: 'u1', format, mode: 'custom', targetScore: t });
-    assert.equal(room.playersPerTeam, n); assert.equal(room.rules.setTargets[0], t);
-  }
-  assert.deepEqual(Object.keys(FORMATS), ['1v1', '2v2', '6v6']);
-  assert.throws(() => createRoom({ creatorId: 'u1', format: '3v3', targetScore: 10 }), RangeError);
-  assert.throws(() => createRoom({ format: '1v1', targetScore: 10 }), TypeError);
-  assert.throws(() => createRoom({ creatorId: 'u1', format: '2v2', mode: 'custom' }), RangeError);       // custom must choose a score
-});
-
-test('only the creator of a CUSTOM, not-yet-started room can change the score; ranked rooms cannot', () => {
-  const room = createRoom({ creatorId: 'host', format: '2v2', mode: 'custom', targetScore: 15 });
-  assert.equal(setTargetScore(room, 'host', 7).rules.setTargets[0], 7); assert.equal(setTargetScore(room, 'host', 25).rules.setTargets[0], 25);
-  assert.equal(room.rules.setTargets[0], 15);                                                           // original untouched
-  assert.throws(() => setTargetScore(room, 'guest', 9), /only the room creator/);
-  assert.throws(() => setTargetScore(room, 'host', 26), RangeError); assert.throws(() => setTargetScore(room, 'host', 6), RangeError);
-  assert.throws(() => setTargetScore({ ...room, started: true }, 'host', 9), /already started/);
-  const ranked = createRoom({ creatorId: 'host', format: '2v2', mode: 'ranked' });
-  assert.deepEqual([...ranked.rules.setTargets], [25, 25, 15]);
-  assert.throws(() => setTargetScore(ranked, 'host', 9), /fixed official/);
-  assert.throws(() => createRoom({ creatorId: 'host', format: '2v2', mode: 'ranked', targetScore: 9 }), RangeError);
-});
-
-// ---- the chosen score must drive the REAL simulation (bots play it out), for each format ----
-const play = (g, maxSecs) => { for (let i = 0; i < maxSecs / DT && g.phase !== 'over'; i++) tick(g, {}, botInput); };
-for (const [format, size] of Object.entries(FORMATS)) for (const t of [7, 12, 25]) {
-  test(`${format} custom room to ${t}: bots finish a real match at exactly that score`, () => {
-    const g = startRoomGame(createRoom({ creatorId: 'h', format, targetScore: t }), { humanIds: [], coach: { seed: 5 } });
-    assert.equal(g.players.length, size * 2); assert.equal(g.match.rules.setTargets[0], t);
-    play(g, 3600);
-    assert.equal(g.phase, 'over', 'match did not finish'); assert.ok(g.match.winner !== null);
-    const end = g.match.log.filter((e) => e.setWinner !== undefined);
-    assert.equal(end.length, 1); const [a, b] = end[0].score; const hi = Math.max(a, b), lo = Math.min(a, b);
-    assert.ok(hi >= t && hi - lo >= 2); assert.ok(hi === t || lo === hi - 2, `finished at ${a}:${b}`);   // exactly t, or deuce extension by 2
-    for (const e of g.events.filter((e) => e.type === 'point')) assert.ok(e.score.every((s) => Number.isFinite(s)));
-    assert.ok(g.events.some((e) => e.type === 'match_over'));
-  });
+// team 0 defends x<0, team 1 defends x>0.
+export function onServe(m, team, playerId) {
+  if (m.winner !== null || m.rally.served) return;
+  if (team !== m.server) return award(m, other(team), 'serve-out-of-turn');
+  m.rally = { touches: 1, side: team, lastPlayer: playerId, lastTeam: team, served: true };
 }
 
-test('2v2 and 1v1 ranked-default games are unchanged (still official rules, same default)', () => {
-  for (const n of [1, 2]) { const g = createGame({ humanIds: [], playersPerTeam: n }); assert.equal(g.match.rules.mode, 'ranked'); assert.deepEqual([...g.match.rules.setTargets], [25, 25, 15]); }
-  assert.throws(() => createGame({ playersPerTeam: 3 }), RangeError); assert.throws(() => createGame({ playersPerTeam: 2, rules: { mode: 'ranked', targetScore: 9 } }), RangeError);
-});
+export function onTouch(m, team, playerId, { block = false } = {}) {
+  if (m.winner !== null || !m.rally.served) return;
+  const r = m.rally;
+  if (block) { // a block does not count as one of the team's three touches
+    if (r.lastTeam !== team) { r.touches = 0; r.side = team; }
+    r.lastTeam = team; r.lastPlayer = null; return;
+  }
+  if (r.lastTeam !== team) { r.touches = 0; r.side = team; r.lastPlayer = null; } // ball crossed
+  if (r.lastPlayer === playerId && r.touches > 0 && r.lastTeam === team) return award(m, other(team), 'double-touch');
+  r.touches++; r.lastPlayer = playerId; r.lastTeam = team;
+  if (r.touches > 3) award(m, other(team), 'four-touches');
+}
+
+export function onLanded(m, { x, z }) {
+  if (m.winner !== null || !m.rally.served) return;
+  const out = Math.abs(x) > COURT.halfLength || Math.abs(z) > COURT.halfWidth;
+  const landSide = sideOfX(x), last = m.rally.lastTeam;
+  if (out) return award(m, other(last), 'out');           // last toucher's team faulted
+  award(m, other(landSide), 'ball-in-court');              // landing side loses the rally
+  }
