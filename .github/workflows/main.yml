@@ -1,0 +1,98 @@
+# NextPlay cloud pipeline. Run it from the GitHub website or the GitHub mobile browser: Actions > NextPlay > Run workflow.
+#   task = unpack   : (one time) unzips nextplay_stage3_free_build.zip3333.zip that you uploaded to the repo root and commits the files
+#   task = tests    : JS tests (25) + config check + C# tests via dotnet (no Unity licence needed)
+#   task = unity    : Unity 2022.3 EditMode tests + Android APK build (needs a Unity licence secret, see docs/CLOUD_BUILD_PHONE_GUIDE.md)
+# Nothing here reports success unless the step really ran and exited 0.
+name: NextPlay
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "What to run"
+        type: choice
+        default: tests
+        options: [unpack, tests, unity]
+
+jobs:
+  unpack:
+    if: ${{ inputs.task == 'unpack' }}
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unzip nextplay_stage3_free_build.zip3333.zip into the repo root
+        run: |
+          set -e
+          test -f nextplay_stage3_free_build.zip3333.zip || { echo "nextplay_stage3_free_build.zip3333.zip is not in the repo root. Upload it first."; exit 1; }
+          rm -rf /tmp/x && mkdir /tmp/x && unzip -q nextplay_stage3_free_build.zip3333.zip -d /tmp/x
+          src=/tmp/x; if [ "$(ls -A /tmp/x | wc -l)" = "1" ] && [ -d "/tmp/x/$(ls /tmp/x)" ]; then src="/tmp/x/$(ls /tmp/x)"; fi
+          rm -rf "$src/.github"            # workflow files cannot be pushed by this job; nextplay.yml is already in the repo
+          cp -a "$src"/. .
+          git rm -q --cached nextplay_stage3_free_build.zip3333.zip || true
+          rm -f nextplay_stage3_free_build.zip3333.zip
+          git config user.name "github-actions"; git config user.email "actions@users.noreply.github.com"
+          git add -A && git commit -m "Unpack NextPlay Stage 3 project" && git push
+          echo "Unpacked. Files now in the repo:"; ls
+
+  tests:
+    if: ${{ inputs.task == 'tests' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: 8.0.x }
+      - name: JavaScript tests (25) + golden parity + config check
+        run: set -o pipefail; npm test 2>&1 | tee js-test-log.txt
+      - name: C# tests (dotnet, no Unity) - sim parity, rules, Stage 3 core
+        run: set -o pipefail; dotnet test tools/SimTests --logger "trx;LogFileName=csharp-tests.trx" --logger "console;verbosity=normal" 2>&1 | tee csharp-test-log.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-logs
+          path: |
+            js-test-log.txt
+            csharp-test-log.txt
+            tools/SimTests/TestResults/*.trx
+
+  unity:
+    if: ${{ inputs.task == 'unity' }}
+    runs-on: ubuntu-latest
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+    steps:
+      - name: Stop clearly if no Unity licence secret exists (this is NOT a pass)
+        run: |
+          if [ -z "$UNITY_LICENSE" ] && [ -z "$UNITY_EMAIL" ]; then
+            echo "::error::No Unity licence secret (UNITY_LICENSE or UNITY_EMAIL/UNITY_PASSWORD). Unity was NOT run. See docs/CLOUD_BUILD_PHONE_GUIDE.md"; exit 1
+          fi
+      - uses: actions/checkout@v4
+        with: { lfs: false }
+      - uses: actions/cache@v4
+        with:
+          path: client-unity/Library
+          key: Library-Android-${{ hashFiles('client-unity/Assets/**', 'client-unity/Packages/**', 'client-unity/ProjectSettings/**') }}
+          restore-keys: Library-Android-
+      - name: Unity EditMode tests (compiles every script; 30 existing + Stage 3 tests)
+        uses: game-ci/unity-test-runner@v4
+        with:
+          projectPath: client-unity
+          testMode: editmode
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          artifactsPath: editmode-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: unity-editmode-results, path: editmode-results }
+      - name: Build Android APK (IL2CPP, ARM64, debug-signed)
+        uses: game-ci/unity-builder@v4
+        with:
+          projectPath: client-unity
+          targetPlatform: Android
+          androidExportType: androidPackage
+          buildName: NextPlay
+          allowDirtyBuild: true
+      - uses: actions/upload-artifact@v4
+        with: { name: NextPlay-android-apk, path: build/Android }
