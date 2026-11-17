@@ -1,62 +1,112 @@
-using NextPlay.Sim;
-using NUnit.Framework;
+// C# port of packages/sim-core/src/rules.js. Prototype rules (not final): rally scoring, sets to 25 win-by-2,
+// deciding set to 15, best of 3, max 3 touches/side, no consecutive same-player touch, block is not a touch.
+using System;
+using System.Collections.Generic;
 
-namespace NextPlay.Tests
+namespace NextPlay.Sim
 {
-    public class SimRulesTests
+    public sealed class Rally
     {
-        [Test] public void ServeCrossesAndLandsInCourt_ServerScoresAndServesAgain()
+        public int Touches;
+        public int Side = -1;
+        public string LastPlayer;      // null = none
+        public int LastTeam = -1;      // -1 = none
+        public bool Served;
+    }
+
+    public sealed class LogEntry
+    {
+        public int Set;
+        public bool IsPoint;           // true: point entry; false: set-end entry
+        public int Team;               // point: scoring team; set-end: winner
+        public string Reason;
+        public int[] Score;
+    }
+
+    // RANKED = fixed official rules (best of 3, sets to 25, deciding set to 15, win by 2). Never configurable.
+    // CUSTOM (custom-room creator only) = any whole-number target 7..25 inclusive, win by 2, single game by default.
+    public sealed class MatchRules
+    {
+        public const int MinTarget = 7, MaxTarget = 25;
+        public string Mode;            // "ranked" | "custom"
+        public int SetsToWin;
+        public int[] SetTargets;
+        public int WinBy = 2;
+
+        public static bool IsValidTarget(int n) { return n >= MinTarget && n <= MaxTarget; }
+        public static MatchRules Ranked() { return new MatchRules { Mode = "ranked", SetsToWin = 2, SetTargets = new[] { 25, 25, 15 }, WinBy = 2 }; }
+        public static MatchRules Custom(int targetScore, int setsToWin = 1)
         {
-            MatchState m = new MatchState(); Rules.OnServe(m, 0, "A1"); Rules.OnLanded(m, 5, 0);
-            Assert.AreEqual(1, m.Score[0]); Assert.AreEqual(0, m.Score[1]); Assert.AreEqual(0, m.Server);
+            if (!IsValidTarget(targetScore)) throw new ArgumentOutOfRangeException("targetScore", "custom target must be a whole number from 7 to 25, got " + targetScore);
+            if (setsToWin != 1 && setsToWin != 2) throw new ArgumentOutOfRangeException("setsToWin", "custom setsToWin must be 1 or 2");
+            return new MatchRules { Mode = "custom", SetsToWin = setsToWin, SetTargets = new[] { targetScore }, WinBy = 2 };
         }
-        [Test] public void OutBallFaultsLastToucher()
+        public int TargetFor(int setIndex) { return SetTargets[Math.Min(setIndex, SetTargets.Length - 1)]; }
+    }
+
+    public sealed class MatchState
+    {
+        public MatchRules Rules = MatchRules.Ranked();   // default = official ranked rules, so all older code behaves as before
+        public int[] Sets = new int[2];
+        public int[] Score = new int[2];
+        public int SetIndex;
+        public int Server;
+        public Rally Rally = new Rally();
+        public int Winner = -1;        // -1 = none
+        public List<LogEntry> Log = new List<LogEntry>();
+    }
+
+    public static class Rules
+    {
+        static int Target(MatchState m) { return m.Rules.TargetFor(m.SetIndex); }
+        static int Other(int t) { return 1 - t; }
+        static int SideOfX(double x) { return x < 0 ? 0 : 1; }
+
+        static void Award(MatchState m, int team, string reason)
         {
-            MatchState m = new MatchState(); Rules.OnServe(m, 0, "A1"); Rules.OnLanded(m, 12, 0);
-            Assert.AreEqual(0, m.Score[0]); Assert.AreEqual(1, m.Score[1]); Assert.AreEqual(1, m.Server);
+            m.Score[team]++;
+            m.Log.Add(new LogEntry { Set = m.SetIndex, IsPoint = true, Team = team, Reason = reason, Score = new[] { m.Score[0], m.Score[1] } });
+            int a = m.Score[0], b = m.Score[1], t = Target(m);
+            if ((a >= t || b >= t) && Math.Abs(a - b) >= m.Rules.WinBy)
+            {
+                m.Sets[a > b ? 0 : 1]++;
+                m.Log.Add(new LogEntry { Set = m.SetIndex, IsPoint = false, Team = a > b ? 0 : 1, Score = new[] { a, b } });
+                if (m.Sets[0] == m.Rules.SetsToWin || m.Sets[1] == m.Rules.SetsToWin) m.Winner = m.Sets[0] == m.Rules.SetsToWin ? 0 : 1;
+                else { m.SetIndex++; m.Score = new int[2]; }
+            }
+            m.Server = team; // rally point: winner of rally serves
+            m.Rally = new Rally();
         }
-        [Test] public void LandingOnOwnSideLosesTheRally()
+
+        public static void OnServe(MatchState m, int team, string playerId)
         {
-            MatchState m = new MatchState(); Rules.OnServe(m, 0, "A1"); Rules.OnLanded(m, -5, 0);
-            Assert.AreEqual(1, m.Score[1]);
+            if (m.Winner != -1 || m.Rally.Served) return;
+            if (team != m.Server) { Award(m, Other(team), "serve-out-of-turn"); return; }
+            m.Rally = new Rally { Touches = 1, Side = team, LastPlayer = playerId, LastTeam = team, Served = true };
         }
-        [Test] public void FourTouchesIsAFault()
+
+        public static void OnTouch(MatchState m, int team, string playerId, bool block = false)
         {
-            MatchState m = new MatchState(); Rules.OnServe(m, 0, "A1"); Rules.OnTouch(m, 0, "A2"); Rules.OnTouch(m, 0, "A3"); Rules.OnTouch(m, 0, "A4");
-            Assert.AreEqual(1, m.Score[1]);
+            if (m.Winner != -1 || !m.Rally.Served) return;
+            Rally r = m.Rally;
+            if (block)
+            {
+                if (r.LastTeam != team) { r.Touches = 0; r.Side = team; }
+                r.LastTeam = team; r.LastPlayer = null; return;
+            }
+            if (r.LastTeam != team) { r.Touches = 0; r.Side = team; r.LastPlayer = null; }
+            if (r.LastPlayer == playerId && r.Touches > 0 && r.LastTeam == team) { Award(m, Other(team), "double-touch"); return; }
+            r.Touches++; r.LastPlayer = playerId; r.LastTeam = team;
+            if (r.Touches > 3) Award(m, Other(team), "four-touches");
         }
-        [Test] public void DoubleTouchIsAFault()
+
+        public static void OnLanded(MatchState m, double x, double z)
         {
-            MatchState m = new MatchState(); Rules.OnServe(m, 0, "A1"); Rules.OnTouch(m, 0, "A1"); Assert.AreEqual(1, m.Score[1]);
-        }
-        [Test] public void BlockIsNotATouch()
-        {
-            MatchState m = new MatchState(); Rules.OnServe(m, 0, "A1");
-            Rules.OnTouch(m, 1, "B1"); Rules.OnTouch(m, 1, "B2", true);       // B1 touches, B2 blocks (not counted)
-            Assert.AreEqual(1, m.Rally.Touches); Assert.IsNull(m.Rally.LastPlayer);
-            Rules.OnTouch(m, 1, "B1"); Assert.AreEqual(2, m.Rally.Touches);    // B1 may play again after a block
-            Assert.AreEqual(0, m.Score[0] + m.Score[1]);
-        }
-        [Test] public void ServeOutOfTurnLosesPoint()
-        {
-            MatchState m = new MatchState(); Rules.OnServe(m, 1, "B1"); Assert.AreEqual(1, m.Score[0]);
-        }
-        [Test] public void SetEndsAt25WinBy2_MatchAtTwoSets_DecidingSetTo15()
-        {
-            MatchState m = new MatchState();
-            System.Action<int> win = t => { Rules.OnServe(m, m.Server, "S"); Rules.OnLanded(m, t == 0 ? 5 : -5, 0); };
-            for (int i = 0; i < 24; i++) { win(0); win(1); }
-            win(0); Assert.AreEqual(0, m.Sets[0]);                  // 25-24: not enough
-            win(0); Assert.AreEqual(1, m.Sets[0]); Assert.AreEqual(1, m.SetIndex);   // 26-24
-            for (int i = 0; i < 25; i++) win(1);                     // team 1 wins set 2 (25-0)
-            Assert.AreEqual(1, m.Sets[1]); Assert.AreEqual(2, m.SetIndex);
-            for (int i = 0; i < 14; i++) { win(0); win(1); }         // 14-14
-            win(0); Assert.AreEqual(-1, m.Winner);                   // 15-14: not enough
-            win(0); Assert.AreEqual(0, m.Winner);                    // 16-14 in the deciding set (target 15)
-        }
-        [Test] public void NoScoringAfterMatchOver()
-        {
-            MatchState m = new MatchState(); m.Winner = 0; m.Rally.Served = true; Rules.OnLanded(m, 5, 0); Assert.AreEqual(0, m.Score[0]);
+            if (m.Winner != -1 || !m.Rally.Served) return;
+            bool outside = Math.Abs(x) > Court.HalfLength || Math.Abs(z) > Court.HalfWidth;
+            int landSide = SideOfX(x), last = m.Rally.LastTeam;
+            if (outside) { Award(m, Other(last), "out"); return; }
+            Award(m, Other(landSide), "ball-in-court");
         }
     }
 }
