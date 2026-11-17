@@ -51,7 +51,7 @@ function award(m, team, reason) {
 // team 0 defends x<0, team 1 defends x>0.
 export function onServe(m, team, playerId) {
   if (m.winner !== null || m.rally.served) return;
-  if (team !== m.server) return award(m, other(m.server), 'serve-out-of-turn');
+  if (team !== m.server) return award(m, other(team), 'serve-out-of-turn');
   m.rally = { touches: 1, side: team, lastPlayer: playerId, lastTeam: team, served: true };
 }
 
