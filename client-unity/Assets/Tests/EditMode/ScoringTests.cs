@@ -9,8 +9,8 @@ namespace NextPlay.Tests
 {
     public class ScoringTests
     {
-        // One point for `team` through the real rules code (serve-out-of-turn gives the point to the calling team).
-        static void Give(MatchState m, int team) { m.Server = 1 - team; Rules.OnServe(m, team, "T"); }
+        // One point for `team` through the real rules code (the other team serves out of turn and forfeits the point).
+        static void Give(MatchState m, int team) { m.Server = team; Rules.OnServe(m, 1 - team, "T"); }
         static MatchState Custom(int target, int sets = 1) { return new MatchState { Rules = MatchRules.Custom(target, sets) }; }
         static LogEntry LastSetEnd(MatchState m) { LogEntry r = null; foreach (LogEntry e in m.Log) if (!e.IsPoint) r = e; return r; }
         public static IEnumerable<int> AllTargets() { for (int n = 7; n <= 25; n++) yield return n; }
