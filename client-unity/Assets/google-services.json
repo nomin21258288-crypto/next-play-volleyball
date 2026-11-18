@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "532001265242",
+    "project_id": "nextplay-volleyball-game",
+    "storage_bucket": "nextplay-volleyball-game.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:532001265242:android:1578e5731cf21a1f376a63",
+        "android_client_info": {
+          "package_name": "com.nexoraplay.nextplayvolleyball"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAq2K-Y301T5SD-UuT5Vf6-vt46f9a_2dk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
